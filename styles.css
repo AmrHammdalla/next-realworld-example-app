@@ -15,7 +15,12 @@ img.lazyload:not([src]) {
 *:focus {
   outline: none;
 }
-
+.searchbox{
+  width: 100vw;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
 @media screen and (max-width: 767px) {
   .col-md-9 {
     flex: 0 0 100%;

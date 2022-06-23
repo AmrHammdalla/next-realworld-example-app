@@ -1,10 +1,10 @@
 import Head from "next/head";
 import React, { Fragment,useState } from "react";
 
-import Banner from "../components/home/Banner";
-import SearchBar from "../components/home/SearchBar";
-import MainView from "../components/home/MainView";
-import Tags from "../components/home/Tags";
+import Banner from "../../components/home/Banner";
+import SearchBar from "../../components/home/SearchBar";
+import MainView from "../../components/home/MainView";
+import Tags from "../../components/home/Tags";
 
 const Home = () => {
   const [searchquery, set_search_query] = useState("");

@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import useSWR from "swr";
-
 import ArticlePreview from "./ArticlePreview";
 import ErrorMessage from "../common/ErrorMessage";
 import LoadingSpinner from "../common/LoadingSpinner";
@@ -15,23 +14,26 @@ import {
 import useViewport from "../../lib/hooks/useViewport";
 import { SERVER_BASE_URL, DEFAULT_LIMIT } from "../../lib/utils/constant";
 import fetcher from "../../lib/utils/fetcher";
-
-const ArticleList = () => {
+import { Z_STREAM_ERROR } from "zlib";
+//-------------------------------------------------------------------------------------------//
+const ArticleList = (props) => {
   const page = usePageState();
   const pageCount = usePageCountState();
   const setPageCount = usePageCountDispatch();
+  const { vw } = useViewport();
+  //----------------------------------------------------------------------------//
   const lastIndex =
     pageCount > 480 ? Math.ceil(pageCount / 20) : Math.ceil(pageCount / 20) - 1;
-
-  const { vw } = useViewport();
+  //----------------------------------------------------------------------------//
   const router = useRouter();
   const { asPath, pathname, query } = router;
+  //---------------------------------------------------------------------------//
   const { favorite, follow, tag, pid } = query;
-
-  const isProfilePage = pathname.startsWith(`/profile`);
-
+  const isProfilePage =
+    pathname.startsWith(`/profile`) || pathname.startsWith(`/myPosts`);
+  //------------------------------------------------------------------------------//
   let fetchURL = `${SERVER_BASE_URL}/articles?offset=${page * DEFAULT_LIMIT}`;
-
+  //------------------------------------------------------------------------------//
   switch (true) {
     case !!tag:
       fetchURL = `${SERVER_BASE_URL}/articles${asPath}&offset=${
@@ -56,7 +58,7 @@ const ArticleList = () => {
     default:
       break;
   }
-
+  //------------------------------------------------------------------------------//
   const { data, error } = useSWR(fetchURL, fetcher);
 
   if (error) {
@@ -69,32 +71,60 @@ const ArticleList = () => {
       </div>
     );
   }
-
-  if (!data) return <LoadingSpinner />;
-
-  const { articles, articlesCount } = data;
-  setPageCount(articlesCount);
-
+  //----------------------------------------------------------------------------//
+  if (!data) {
+    return <LoadingSpinner />;
+  }
+  //----------------------------------------------------------------------------//
+  let { articles, articlesCount } = data;
+  //----------------------------------------------------------------------------//
   if (articles && articles.length === 0) {
     return <div className="article-preview">No articles are here... yet.</div>;
   }
+  //-----------------------------------------------------------------------------//
+  setPageCount(articlesCount);
+  //----------------------------------------------------------------------------//
+  function get_filtered_article(articles) {
+    if (articles.length > 0) {
+      let filtered_articles = articles.filter((art) =>
+        art.title.toLowerCase().includes(props.searchquery.toLowerCase())
+      );
+      return filtered_articles;
+    } else return articles;
+  }
+  //---------------------------------------------------------------------------//
+  if (props.searchquery !== "" && props.searchquery !== undefined) {
+    // if (isProfilePage === true) {
+    //   articles=get_filtered_article(articles);
+    // }
+    articles = get_filtered_article(articles);
+    articlesCount = articles.length;
+  }
+  //-----------------------------------------------------------------------------//
 
+  //----------------------------------------------------------------------------//
   return (
     <>
-      {articles?.map((article) => (
-        <ArticlePreview key={article.slug} article={article} />
-      ))}
+      {articles.length > 0 && articles ? (
+        articles.map((article) => (
+          <ArticlePreview key={article.slug} article={article} />
+        ))
+      ) : (
+        <h5>No matched results found</h5>
+      )}
 
-      <Maybe test={articlesCount && articlesCount > 20}>
-        <Pagination
-          total={pageCount}
-          limit={20}
-          pageCount={vw >= 768 ? 10 : 5}
-          currentPage={page}
-          lastIndex={lastIndex}
-          fetchURL={fetchURL}
-        />
-      </Maybe>
+      {articles.length > 0 && articles && (
+        <Maybe test={articlesCount && articlesCount > 20}>
+          <Pagination
+            total={pageCount}
+            limit={20}
+            pageCount={vw >= 768 ? 10 : 5}
+            currentPage={page}
+            lastIndex={lastIndex}
+            fetchURL={fetchURL}
+          />
+        </Maybe>
+      )}
     </>
   );
 };
